@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <script src="face-api.js"></script>
   <script src="js/commons.js"></script>
@@ -10,6 +11,7 @@
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
 </head>
+
 <body>
   <div id="navbar"></div>
   <div class="center-content page-container">
@@ -17,6 +19,12 @@
     <div class="progress" id="loader">
       <div class="indeterminate"></div>
     </div>
+    <!-- cropped images  -->
+    <div id='croppedImages'>
+      <p>Cropped Faces</p>
+      <span id="faces"></span>
+    </div>
+    
     <div style="position: relative" class="margin">
       <img id="inputImg" src="" style="max-width: 800px;" />
       <canvas id="overlay" />
@@ -29,10 +37,7 @@
         <label for="imgUrlInput">Get image from URL:</label>
         <input id="imgUrlInput" type="text" class="bold">
       </div>
-      <button
-        class="waves-effect waves-light btn"
-        onclick="loadImageFromUrl()"
-      >
+      <button class="waves-effect waves-light btn" onclick="loadImageFromUrl()">
         Ok
       </button>
       <!-- image_selection_control -->
@@ -60,16 +65,10 @@
           <label for="minConfidence">Min Confidence:</label>
           <input disabled value="0.5" id="minConfidence" type="text" class="bold">
         </div>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onDecreaseMinConfidence()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onDecreaseMinConfidence()">
           <i class="material-icons left">-</i>
         </button>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onIncreaseMinConfidence()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onIncreaseMinConfidence()">
           <i class="material-icons left">+</i>
         </button>
       </div>
@@ -95,16 +94,10 @@
           <label for="scoreThreshold">Score Threshold:</label>
           <input disabled value="0.5" id="scoreThreshold" type="text" class="bold">
         </div>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onDecreaseScoreThreshold()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onDecreaseScoreThreshold()">
           <i class="material-icons left">-</i>
         </button>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onIncreaseScoreThreshold()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onIncreaseScoreThreshold()">
           <i class="material-icons left">+</i>
         </button>
       </div>
@@ -118,54 +111,82 @@
           <label for="minFaceSize">Minimum Face Size:</label>
           <input disabled value="20" id="minFaceSize" type="text" class="bold">
         </div>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onDecreaseMinFaceSize()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onDecreaseMinFaceSize()">
           <i class="material-icons left">-</i>
         </button>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onIncreaseMinFaceSize()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onIncreaseMinFaceSize()">
           <i class="material-icons left">+</i>
         </button>
       </div>
     </span>
     <!-- mtcnn_controls -->
 
-  </body>
-
-  <script>
-    async function updateResults() {
-      if (!isFaceDetectionModelLoaded()) {
-        return
-      }
-
-      const inputImgEl = $('#inputImg').get(0)
-      const options = getFaceDetectorOptions()
-
-      const results = await faceapi.detectAllFaces(inputImgEl, options)
-
-      const canvas = $('#overlay').get(0)
-      faceapi.matchDimensions(canvas, inputImgEl)
-      faceapi.draw.drawDetections(canvas, faceapi.resizeResults(results, inputImgEl))
-    }
-
-    async function run() {
-      // load face detection
-      await changeFaceDetector(SSD_MOBILENETV1)
-
-      // start processing image
-      updateResults()
-    }
-
-    $(document).ready(function() {
-      renderNavBar('#navbar', 'face_detection')
-      initImageSelectionControls()
-      initFaceDetectionControls()
-      run()
-    })
-  </script>
 </body>
+
+<script>
+  async function updateResults() {
+    if (!isFaceDetectionModelLoaded()) {
+      return
+    }
+    // const sharp = require('sharp')
+    const inputImgEl = $('#inputImg').get(0)
+    const options = getFaceDetectorOptions()
+
+    var results = await faceapi.detectAllFaces(inputImgEl, options)
+    console.log("results: " + results)
+    console.log("result 0", results[0])
+    face1 = results[0].box
+    const canvas = $('#overlay').get(0)
+    faceapi.matchDimensions(canvas, inputImgEl)
+    faceapi.draw.drawDetections(canvas, faceapi.resizeResults(results, inputImgEl))
+
+    // const c = document.getElementById("myCanvas")
+    // var ctx = c.getContext("2d")
+    // c.width = face1.width
+    // c.height = face1.height
+    // var imgCrop = document.getElementById("inputImg")
+    // ctx.drawImage(imgCrop,
+    //   face1.topLeft.x, face1.topLeft.y,
+    //   face1.width, face1.height,
+    //   0, 0, face1.width, face1.height)
+
+    var croppedFaces = results.map(function (face, index) {
+      let canvas = document.createElement("CANVAS")
+      let ctx = canvas.getContext("2d")
+      canvas.setAttribute("id", index)
+      canvas.width = face.box.width
+      canvas.height = face.box.height
+      let a = document.createElement("A")
+      a.setAttribute("id", "face" + index)
+      a.setAttribute("download", "face_" + index)
+      document.getElementById("faces").appendChild(a).appendChild(canvas)
+      var imgCrop = document.getElementById("inputImg")
+      ctx.drawImage(imgCrop,
+        face.box.topLeft.x, face.box.topLeft.y,
+        face.box.width, face.box.height,
+        0, 0, face.box.width, face.box.height)
+        a.setAttribute("href", canvas.toDataURL("image/png"))
+        a.click()
+      return canvas
+    })
+
+  }
+
+  async function run() {
+    // load face detection
+    await changeFaceDetector(SSD_MOBILENETV1)
+
+    // start processing image
+    updateResults()
+  }
+
+  $(document).ready(function () {
+    renderNavBar('#navbar', 'face_detection')
+    initImageSelectionControls()
+    initFaceDetectionControls()
+    run()
+  })
+</script>
+</body>
+
 </html>
